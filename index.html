@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Art Generator - MS Paint Style</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'MS Sans Serif', Arial, sans-serif;
+            background-color: #008080;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: #c0c0c0;
+            border: 2px outset #ffffff;
+            box-shadow: 2px 2px 0 #000000;
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        .title-bar {
+            background: linear-gradient(to right, #000080, #1084d0);
+            color: white;
+            padding: 3px 5px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .title-bar-text {
+            font-size: 14px;
+        }
+
+        .title-bar-controls button {
+            background-color: #c0c0c0;
+            border: 1px outset #ffffff;
+            width: 16px;
+            height: 14px;
+            font-size: 10px;
+            margin-left: 2px;
+            cursor: pointer;
+        }
+
+        .toolbar {
+            background-color: #c0c0c0;
+            padding: 5px;
+            border-bottom: 2px groove #ffffff;
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .tool-button {
+            background-color: #c0c0c0;
+            border: 2px outset #ffffff;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .tool-button:hover {
+            background-color: #d0d0d0;
+        }
+
+        .tool-button.active {
+            border-style: inset;
+            background-color: #a0a0a0;
+        }
+
+        .color-palette {
+            display: flex;
+            gap: 2px;
+            flex-wrap: wrap;
+            max-width: 200px;
+        }
+
+        .color-box {
+            width: 20px;
+            height: 20px;
+            border: 1px solid #808080;
+            cursor: pointer;
+        }
+
+        .color-box.selected {
+            border: 2px solid #000000;
+        }
+
+        .main-content {
+            display: flex;
+            padding: 10px;
+            gap: 10px;
+        }
+
+        .canvas-container {
+            border: 2px inset #ffffff;
+            background-color: #ffffff;
+            flex: 1;
+        }
+
+        canvas {
+            display: block;
+            cursor: crosshair;
+        }
+
+        .controls {
+            background-color: #c0c0c0;
+            border: 2px groove #ffffff;
+            padding: 10px;
+            width: 250px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 12px;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 3px;
+            border: 2px inset #ffffff;
+            background-color: white;
+            font-family: 'Courier New', monospace;
+        }
+
+        button.action-button {
+            background-color: #c0c0c0;
+            border: 2px outset #ffffff;
+            padding: 5px 15px;
+            cursor: pointer;
+            font-family: 'MS Sans Serif', Arial, sans-serif;
+            width: 100%;
+            margin-bottom: 5px;
+        }
+
+        button.action-button:active {
+            border-style: inset;
+        }
+
+        button.action-button:hover {
+            background-color: #d0d0d0;
+        }
+
+        .ascii-output {
+            background-color: #c0c0c0;
+            border: 2px groove #ffffff;
+            padding: 10px;
+            margin: 10px;
+        }
+
+        .ascii-output pre {
+            background-color: white;
+            border: 2px inset #ffffff;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 10px;
+            line-height: 1;
+            overflow-x: auto;
+            white-space: pre;
+        }
+
+        .size-input {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .size-input input {
+            width: 60px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title-bar">
+            <div class="title-bar-text">ASCII Art Generator - MS Paint Style</div>
+            <div class="title-bar-controls">
+                <button>_</button>
+                <button>□</button>
+                <button>×</button>
+            </div>
+        </div>
+
+        <div class="toolbar">
+            <div class="tool-button active" id="pencil" title="Pencil">✏️</div>
+            <div class="tool-button" id="brush" title="Brush">🖌️</div>
+            <div class="tool-button" id="eraser" title="Eraser">🧹</div>
+            <div class="tool-button" id="text" title="Text">T</div>
+            <div class="tool-button" id="clear" title="Clear Canvas">🗑️</div>
+            <div style="margin-left: 10px; display: flex; gap: 3px;">
+                <label style="font-size: 11px; margin-right: 5px;">Color:</label>
+                <div class="color-palette" id="colorPalette"></div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="canvas-container">
+                <canvas id="drawingCanvas" width="600" height="400"></canvas>
+            </div>
+
+            <div class="controls">
+                <div class="control-group">
+                    <label>Brush Size:</label>
+                    <div class="size-input">
+                        <input type="number" id="brushSize" value="2" min="1" max="20">
+                        <span style="font-size: 11px;">px</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Text to Draw:</label>
+                    <input type="text" id="textInput" placeholder="Type text here">
+                </div>
+
+                <div class="control-group">
+                    <label>ASCII Width:</label>
+                    <div class="size-input">
+                        <input type="number" id="asciiWidth" value="80" min="20" max="200">
+                        <span style="font-size: 11px;">chars</span>
+                    </div>
+                </div>
+
+                <button class="action-button" id="generateAscii">🎨 Generate ASCII Art</button>
+                <button class="action-button" id="clearCanvas">🧹 Clear Canvas</button>
+                <button class="action-button" id="downloadAscii">💾 Download ASCII</button>
+            </div>
+        </div>
+
+        <div class="ascii-output" id="asciiOutput" style="display: none;">
+            <label style="font-size: 12px; font-weight: bold; margin-bottom: 5px; display: block;">ASCII Art Output:</label>
+            <pre id="asciiText"></pre>
+        </div>
+    </div>
+
+    <script>
+        // Canvas setup
+        const canvas = document.getElementById('drawingCanvas');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+        let currentTool = 'pencil';
+        let currentColor = '#000000';
+        let brushSize = 2;
+
+        // Initialize white background
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Color palette
+        const colors = [
+            '#000000', '#808080', '#800000', '#808000',
+            '#008000', '#008080', '#000080', '#800080',
+            '#FFFFFF', '#C0C0C0', '#FF0000', '#FFFF00',
+            '#00FF00', '#00FFFF', '#0000FF', '#FF00FF'
+        ];
+
+        const colorPalette = document.getElementById('colorPalette');
+        colors.forEach(color => {
+            const colorBox = document.createElement('div');
+            colorBox.className = 'color-box';
+            colorBox.style.backgroundColor = color;
+            if (color === currentColor) colorBox.classList.add('selected');
+            colorBox.addEventListener('click', () => {
+                currentColor = color;
+                document.querySelectorAll('.color-box').forEach(box => {
+                    box.classList.remove('selected');
+                });
+                colorBox.classList.add('selected');
+            });
+            colorPalette.appendChild(colorBox);
+        });
+
+        // Tool selection
+        document.querySelectorAll('.tool-button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const toolId = e.currentTarget.id;
+                
+                if (toolId === 'clear') {
+                    clearCanvas();
+                    return;
+                }
+
+                currentTool = toolId;
+                document.querySelectorAll('.tool-button').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                e.currentTarget.classList.add('active');
+
+                if (toolId === 'text') {
+                    canvas.style.cursor = 'text';
+                } else {
+                    canvas.style.cursor = 'crosshair';
+                }
+            });
+        });
+
+        // Brush size
+        document.getElementById('brushSize').addEventListener('change', (e) => {
+            brushSize = parseInt(e.target.value);
+        });
+
+        // Drawing functions
+        function startDrawing(e) {
+            isDrawing = true;
+            draw(e);
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+            ctx.beginPath();
+        }
+
+        function draw(e) {
+            if (!isDrawing && currentTool !== 'text') return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            if (currentTool === 'pencil') {
+                ctx.strokeStyle = currentColor;
+                ctx.lineWidth = brushSize;
+                ctx.lineCap = 'round';
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+            } else if (currentTool === 'brush') {
+                ctx.fillStyle = currentColor;
+                ctx.beginPath();
+                ctx.arc(x, y, brushSize * 2, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (currentTool === 'eraser') {
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(x - brushSize * 2, y - brushSize * 2, brushSize * 4, brushSize * 4);
+            }
+        }
+
+        function drawText(e) {
+            if (currentTool !== 'text') return;
+
+            const textInput = document.getElementById('textInput');
+            const text = textInput.value;
+            
+            if (!text) {
+                alert('Please enter text in the "Text to Draw" field first!');
+                return;
+            }
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            ctx.fillStyle = currentColor;
+            ctx.font = `${brushSize * 10}px Arial`;
+            ctx.fillText(text, x, y);
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (currentTool === 'text') {
+                drawText(e);
+            } else {
+                startDrawing(e);
+            }
+        });
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+
+        // Clear canvas
+        function clearCanvas() {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        document.getElementById('clearCanvas').addEventListener('click', clearCanvas);
+
+        // ASCII Art Generation
+        function generateAsciiArt() {
+            const asciiWidth = parseInt(document.getElementById('asciiWidth').value);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            
+            // ASCII characters from darkest to lightest
+            const asciiChars = '@%#*+=-:. ';
+            
+            const cellWidth = canvas.width / asciiWidth;
+            const cellHeight = cellWidth * 2; // ASCII characters are taller than wide
+            const asciiHeight = Math.floor(canvas.height / cellHeight);
+            
+            let asciiArt = '';
+            
+            for (let y = 0; y < asciiHeight; y++) {
+                for (let x = 0; x < asciiWidth; x++) {
+                    const pixelX = Math.floor(x * cellWidth);
+                    const pixelY = Math.floor(y * cellHeight);
+                    
+                    // Sample multiple pixels in the cell and average
+                    let totalBrightness = 0;
+                    let sampleCount = 0;
+                    
+                    for (let sy = 0; sy < cellHeight && pixelY + sy < canvas.height; sy++) {
+                        for (let sx = 0; sx < cellWidth && pixelX + sx < canvas.width; sx++) {
+                            const pixelIndex = ((pixelY + sy) * canvas.width + (pixelX + sx)) * 4;
+                            const r = imageData.data[pixelIndex];
+                            const g = imageData.data[pixelIndex + 1];
+                            const b = imageData.data[pixelIndex + 2];
+                            
+                            // Calculate brightness
+                            const brightness = (r + g + b) / 3;
+                            totalBrightness += brightness;
+                            sampleCount++;
+                        }
+                    }
+                    
+                    const avgBrightness = totalBrightness / sampleCount;
+                    
+                    // Map brightness to ASCII character
+                    const charIndex = Math.floor((1 - avgBrightness / 255) * (asciiChars.length - 1));
+                    asciiArt += asciiChars[charIndex];
+                }
+                asciiArt += '\n';
+            }
+            
+            // Display ASCII art
+            document.getElementById('asciiText').textContent = asciiArt;
+            document.getElementById('asciiOutput').style.display = 'block';
+        }
+
+        document.getElementById('generateAscii').addEventListener('click', generateAsciiArt);
+
+        // Download ASCII art
+        document.getElementById('downloadAscii').addEventListener('click', () => {
+            const asciiText = document.getElementById('asciiText').textContent;
+            if (!asciiText) {
+                alert('Please generate ASCII art first!');
+                return;
+            }
+
+            const blob = new Blob([asciiText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ascii-art.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+    </script>
+</body>
+</html>
